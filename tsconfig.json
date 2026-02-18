@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["DOM", "DOM.Iterable", "ES2020"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
+    "baseUrl": ".",
+    "paths": {
+      "bug-reporter": ["./src/index.ts"],
+      "bug-reporter/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "tests", "tsup.config.ts", "vitest.config.ts", "playwright.config.ts"],
+  "exclude": ["dist", "node_modules", "_legacy_app_backup"]
+}

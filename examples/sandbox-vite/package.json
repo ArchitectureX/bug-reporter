@@ -1,0 +1,24 @@
+{
+  "name": "bug-reporter-sandbox-vite",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "prepare:sdk": "npm --prefix ../.. run build",
+    "dev": "npm run prepare:sdk && vite",
+    "build": "npm run prepare:sdk && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "bug-reporter": "file:../..",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.24",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.0.2",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
+  }
+}

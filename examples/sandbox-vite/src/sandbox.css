@@ -1,0 +1,74 @@
+:root {
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.4;
+  color: #0f172a;
+  background: #eef3f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 32px 16px 96px;
+}
+
+.card {
+  max-width: 840px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #d9e3ef;
+  padding: 24px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+h1 {
+  margin: 0 0 8px;
+}
+
+.demo-block {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #d9e3ef;
+  background: #f8fbff;
+}
+
+.sandbox-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.sandbox-btn {
+  border: 1px solid #c7d6e7;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sandbox-btn:hover {
+  background: #eef5ff;
+}
+
+.sandbox-status {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #334155;
+}
+
+.sensitive {
+  background: #fff8f8;
+  border-color: #ffd9d9;
+}
