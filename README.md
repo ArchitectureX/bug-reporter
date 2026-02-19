@@ -81,6 +81,34 @@ npm run sandbox:vite
 
 Sandbox app path: `examples/sandbox-vite`.
 
+## Publish To npm
+
+1. Login to npm:
+```bash
+npm login
+```
+2. Verify quality/build locally:
+```bash
+npm run release:verify
+```
+3. Verify package contents before publishing:
+```bash
+npm run publish:dry-run
+```
+4. Publish `@fogg/bug-reporter`:
+```bash
+npm run publish:npm
+```
+
+### Changesets workflow
+
+For versioned releases with Changesets:
+```bash
+npm run changeset
+npm run version:packages
+npm run release
+```
+
 ## License
 
 MIT

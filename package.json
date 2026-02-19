@@ -1,6 +1,6 @@
 {
   "name": "@fogg/bug-reporter",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Production-ready React bug reporting SDK with screenshot, recording, diagnostics, and pluggable storage backends.",
   "license": "MIT",
   "private": false,
@@ -24,7 +24,11 @@
     },
     "./styles.css": "./dist/index.css"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "changeset": "changeset",
     "clean": "rm -rf dist",
     "build": "npm run clean && tsup",
     "typecheck": "tsc --noEmit",
@@ -33,10 +37,15 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:site": "vite --config tests/e2e/site/vite.config.ts --host 127.0.0.1 --port 4173",
+    "release:verify": "npm run lint && npm run typecheck && npm test && npm run build",
+    "version:packages": "changeset version",
+    "publish:dry-run": "npm run release:verify && npm publish --dry-run --ignore-scripts",
+    "publish:npm": "npm publish",
     "release": "changeset publish",
     "sandbox:vite": "npm run sandbox:vite:install && npm --prefix examples/sandbox-vite run dev",
     "sandbox:vite:build": "npm run sandbox:vite:install && npm --prefix examples/sandbox-vite run build",
-    "sandbox:vite:install": "npm --prefix examples/sandbox-vite install"
+    "sandbox:vite:install": "npm --prefix examples/sandbox-vite install",
+    "prepublishOnly": "npm run release:verify"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
