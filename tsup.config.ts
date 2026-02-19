@@ -4,6 +4,7 @@ import path from "node:path";
 export default defineConfig({
   entry: ["src/index.ts", "src/styles/index.css"],
   format: ["esm", "cjs"],
+  target: "es2018",
   dts: {
     compilerOptions: {
       jsx: "preserve"
