@@ -50,6 +50,36 @@ Enable these flags in config to attach logs and request traces to each report:
 />
 ```
 
+## S3 Storage Example
+
+Use this when your backend returns presigned upload URLs.
+
+```tsx
+import { BugReporter } from "@fogg/bug-reporter";
+import "@fogg/bug-reporter/styles.css";
+
+export function App() {
+  return (
+    <BugReporter
+      config={{
+        apiEndpoint: "https://api.example.com/bug-reports",
+        projectId: "web-app",
+        environment: "production",
+        storage: {
+          mode: "s3-presigned",
+          s3: {
+            presignEndpoint: "https://api.example.com/bug-assets/presign",
+            publicBaseUrl: "https://cdn.example.com"
+          }
+        }
+      }}
+    />
+  );
+}
+```
+
+See `docs/backend-s3.md` for the backend request/response contract.
+
 ## Docs
 
 - `docs/quickstart.md`
