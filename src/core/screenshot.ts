@@ -13,6 +13,13 @@ type SelectionRect = {
   height: number;
 };
 
+type RectLike = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
 function applyMasking(selectors: string[]): Array<{ element: HTMLElement; previous: string }> {
   const masked: Array<{ element: HTMLElement; previous: string }> = [];
   for (const selector of selectors) {
@@ -145,6 +152,107 @@ function createSelectionOverlay(): Promise<SelectionRect> {
   });
 }
 
+function rectsIntersect(a: RectLike, b: RectLike): boolean {
+  return !(a.left + a.width <= b.left || b.left + b.width <= a.left || a.top + a.height <= b.top || b.top + b.height <= a.top);
+}
+
+function intersectsCrossOriginIframe(selection: SelectionRect): boolean {
+  const iframes = Array.from(document.querySelectorAll("iframe"));
+  for (const iframe of iframes) {
+    const rect = iframe.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) {
+      continue;
+    }
+
+    if (
+      !rectsIntersect(selection, {
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height
+      })
+    ) {
+      continue;
+    }
+
+    try {
+      if (!iframe.contentWindow || !iframe.contentDocument) {
+        return true;
+      }
+
+      // Accessing document on cross-origin iframes throws.
+      void iframe.contentDocument.location.href;
+    } catch {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function captureWithDisplayMedia(selection: SelectionRect): Promise<Blob> {
+  if (!navigator.mediaDevices?.getDisplayMedia) {
+    throw new BugReporterError("CAPTURE_ERROR", "This page contains iframe content that needs screen-capture permission.");
+  }
+
+  let stream: MediaStream | null = null;
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: false
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    if (!video.videoWidth || !video.videoHeight) {
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => resolve();
+      });
+    }
+
+    if (!video.videoWidth || !video.videoHeight) {
+      throw new BugReporterError("CAPTURE_ERROR", "Could not read screen-capture frame.");
+    }
+
+    const scaleX = video.videoWidth / window.innerWidth;
+    const scaleY = video.videoHeight / window.innerHeight;
+    const sx = Math.max(0, Math.round(selection.left * scaleX));
+    const sy = Math.max(0, Math.round(selection.top * scaleY));
+    const sw = Math.max(1, Math.round(selection.width * scaleX));
+    const sh = Math.max(1, Math.round(selection.height * scaleY));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = sw;
+    canvas.height = sh;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new BugReporterError("CAPTURE_ERROR", "Canvas 2D context unavailable.");
+    }
+
+    context.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
+    return await canvasToBlob(canvas);
+  } catch (error) {
+    if (error instanceof BugReporterError) {
+      throw error;
+    }
+
+    if (error instanceof DOMException && error.name === "NotAllowedError") {
+      throw new BugReporterError("PERMISSION_DENIED", "Permission denied for screen capture.", error);
+    }
+
+    throw new BugReporterError("CAPTURE_ERROR", "Fallback screen capture failed.", error);
+  } finally {
+    stream?.getTracks().forEach((track) => track.stop());
+    video.srcObject = null;
+  }
+}
+
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
@@ -163,6 +271,10 @@ export async function captureScreenshotArea(options: CaptureOptions): Promise<Bl
   const textChanges = scrubText(document.body, options.redactTextPatterns);
 
   try {
+    if (intersectsCrossOriginIframe(selection)) {
+      return await captureWithDisplayMedia(selection);
+    }
+
     const baseCanvas = await html2canvas(document.documentElement, {
       useCORS: true,
       scrollX: -window.scrollX,
@@ -193,6 +305,16 @@ export async function captureScreenshotArea(options: CaptureOptions): Promise<Bl
     context.drawImage(baseCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
     return await canvasToBlob(cropped);
   } catch (error) {
+    if (!intersectsCrossOriginIframe(selection)) {
+      try {
+        return await captureWithDisplayMedia(selection);
+      } catch (fallbackError) {
+        if (fallbackError instanceof BugReporterError) {
+          throw fallbackError;
+        }
+      }
+    }
+
     if (error instanceof BugReporterError) {
       throw error;
     }
