@@ -5,7 +5,15 @@ import { Modal } from "./Modal";
 import { StepDescribe } from "./StepDescribe";
 import { StepReview } from "./StepReview";
 import { useBugReporter } from "../hooks";
-import type { BugReporterConfig, CustomFormComponent, DockSide, LauncherPosition, ThemeMode } from "../types";
+import type {
+  BugReportResponse,
+  BugReporterConfig,
+  BugReporterSubmitData,
+  CustomFormComponent,
+  DockSide,
+  LauncherPosition,
+  ThemeMode
+} from "../types";
 import { getButtonStyle, getDockButtonStyle, inlineStyles } from "../styles/inline";
 
 type BugReporterProps = {
@@ -15,6 +23,7 @@ type BugReporterProps = {
   launcherText?: string;
   themeMode?: ThemeMode;
   buttonColor?: string;
+  onSubmit?: (payload: BugReporterSubmitData) => Promise<BugReportResponse | void> | BugReportResponse | void;
 };
 
 type BugReporterShellProps = {
@@ -147,12 +156,13 @@ export function BugReporter({
   launcherPosition,
   launcherText,
   themeMode = "dark",
-  buttonColor
+  buttonColor,
+  onSubmit
 }: BugReporterProps) {
   const resolvedButtonColor = buttonColor ?? config.theme?.primaryColor ?? "#390E58";
 
   return (
-    <BugReporterProvider config={config}>
+    <BugReporterProvider config={config} onSubmit={onSubmit}>
       <BugReporterShell
         CustomForm={CustomForm}
         launcherPosition={launcherPosition}

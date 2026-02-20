@@ -40,6 +40,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
   const [isRecordHover, setIsRecordHover] = useState(false);
   const [seconds, setSeconds] = useState(sharedRecording?.seconds ?? 0);
   const [error, setError] = useState<string | null>(null);
+  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 20);
 
   const start = async () => {
     if (sharedRecording) {
@@ -56,6 +57,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
       const active = await recorderModule.startScreenRecording({
         maxSeconds: config.storage.limits.maxVideoSeconds,
         maxBytes: config.storage.limits.maxVideoBytes,
+        entireScreenOnly: config.features.recordingEntireScreenOnly,
         onTick: (tick) => {
           if (sharedRecording) {
             sharedRecording.seconds = tick;
@@ -126,7 +128,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
         style={{
           ...getButtonStyle("primary", { fullWidth: true }),
           ...inlineStyles.captureButton,
-          ...(isRecordHover ? { background: "#8120C7" } : {})
+          ...(recording || isRecordHover ? { background: "#8120C7" } : {})
         }}
         onClick={start}
         onMouseEnter={() => setIsRecordHover(true)}
@@ -159,7 +161,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
   return (
     <div style={embedded ? undefined : inlineStyles.step}>
       {embedded ? <h3 style={inlineStyles.h3}>Screen recording</h3> : <h2 style={inlineStyles.h2}>Screen recording</h2>}
-      <p style={inlineStyles.p}>Record up to {config.storage.limits.maxVideoSeconds} seconds. You can minimize this sidebar while recording.</p>
+      <p style={inlineStyles.p}>Record up to {uiMaxVideoSeconds} seconds. You can minimize this sidebar while recording.</p>
 
       <div style={inlineStyles.actions}>
         {onBack ? (
@@ -172,7 +174,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
             type="button"
             style={{
               ...getButtonStyle("primary"),
-              ...(isRecordHover ? { background: "#8120C7" } : {})
+              ...(recording || isRecordHover ? { background: "#8120C7" } : {})
             }}
             onClick={start}
             onMouseEnter={() => setIsRecordHover(true)}

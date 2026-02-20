@@ -8,6 +8,8 @@ export type {
   BugReportResponse,
   BugReporterConfig,
   BugReporterContextValue,
+  BugReporterSubmitAsset,
+  BugReporterSubmitData,
   BugReporterState,
   CapturedAsset,
   CustomFormProps,

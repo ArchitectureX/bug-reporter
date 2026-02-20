@@ -15,6 +15,7 @@ export type ActiveRecording = {
 type StartRecordingOptions = {
   maxSeconds: number;
   maxBytes: number;
+  entireScreenOnly?: boolean;
   onTick?: (seconds: number) => void;
 };
 
@@ -35,12 +36,22 @@ export async function startScreenRecording(options: StartRecordingOptions): Prom
 
   let stream: MediaStream;
   try {
+    const videoConstraint: MediaTrackConstraints | boolean = options.entireScreenOnly ? { displaySurface: "monitor" } : true;
     stream = await navigator.mediaDevices.getDisplayMedia({
-      video: true,
+      video: videoConstraint,
       audio: false
     });
   } catch (error) {
     throw new BugReporterError("PERMISSION_DENIED", "Permission denied for screen recording.", error);
+  }
+
+  if (options.entireScreenOnly) {
+    const videoTrack = stream.getVideoTracks()[0];
+    const surface = videoTrack?.getSettings().displaySurface;
+    if (surface && surface !== "monitor") {
+      stream.getTracks().forEach((track) => track.stop());
+      throw new BugReporterError("VALIDATION_ERROR", "Please choose Entire Screen to record.");
+    }
   }
 
   const mimeType = pickMimeType();

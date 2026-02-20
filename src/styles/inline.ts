@@ -258,8 +258,8 @@ export const inlineStyles = {
   } as CSSProperties,
   captureDone: {
     fontSize: "11px",
-    color: "var(--br-text)",
-    opacity: 0.7
+    color: "#facc15",
+    opacity: 1
   } as CSSProperties,
   captureNote: {
     margin: "10px 0 0",

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BugReporter } from "@fogg/bug-reporter";
-import type { CustomFormProps } from "@fogg/bug-reporter";
+import type { BugReportResponse, BugReporterSubmitData, CustomFormProps } from "@fogg/bug-reporter";
 
 declare global {
   interface Window {
@@ -92,6 +92,27 @@ function SeverityCustomForm({ attributes, updateAttribute }: CustomFormProps) {
 
 export function App() {
   const [scenarioStatus, setScenarioStatus] = useState("No scenario triggered yet.");
+  const [submittedAssets, setSubmittedAssets] = useState<BugReporterSubmitData["assets"]>([]);
+
+  const handleReporterSubmit = async (payload: BugReporterSubmitData): Promise<BugReportResponse> => {
+    const response = await fetch("/sandbox/report", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Report submit failed (${response.status}).`);
+    }
+
+    const result = (await response.json().catch(() => ({}))) as BugReportResponse;
+    const submittedTypes = payload.assets.map((asset) => asset.type).join(", ") || "none";
+    setScenarioStatus(`Submitted via onSubmit with ${payload.assets.length} base64 asset(s): ${submittedTypes}.`);
+    setSubmittedAssets(payload.assets);
+    return result;
+  };
 
   const simulateApiFailure = async () => {
     try {
@@ -133,7 +154,7 @@ export function App() {
         <h1>bug-reporter local sandbox</h1>
         <p>
           Use the floating launcher at the bottom-right to test screenshot capture, optional annotation, recording,
-          diagnostics, upload flow, and final submission.
+          diagnostics, and host-managed submission through <code>onSubmit</code>.
         </p>
 
         <section className="demo-block">
@@ -162,26 +183,56 @@ export function App() {
           <h2>Masked region</h2>
           <p>This block should appear blurred in screenshots because of mask selectors.</p>
         </section>
+
+        {submittedAssets.length ? (
+          <section className="demo-block">
+            <h2>Last submitted assets</h2>
+            <p>Rendered from the base64 assets returned in the onSubmit payload.</p>
+            {!submittedAssets.some((asset) => asset.type === "recording") ? (
+              <p style={{ color: "#b45309", fontWeight: 600 }}>
+                No recording asset was submitted. Select Entire Screen and finish the recording before submitting.
+              </p>
+            ) : null}
+            <div style={{ display: "grid", gap: "12px" }}>
+              {submittedAssets.map((asset) => (
+                <div key={asset.id}>
+                  <p>
+                    <strong>{asset.type}</strong> - {asset.mimeType}
+                  </p>
+                  {asset.type === "recording" ? (
+                    <video src={asset.base64} controls style={{ width: "100%", maxWidth: "640px", borderRadius: "8px" }} />
+                  ) : asset.type === "screenshot" ? (
+                    <img
+                      src={asset.base64}
+                      alt={`${asset.type} preview`}
+                      style={{ width: "100%", maxWidth: "640px", borderRadius: "8px" }}
+                    />
+                  ) : (
+                    <a href={asset.base64} download={asset.filename}>
+                      Download {asset.filename}
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </main>
 
       <BugReporter
         CustomForm={SeverityCustomForm}
         themeMode="light"
         buttonColor="#374151"
+        onSubmit={handleReporterSubmit}
         config={{
-          apiEndpoint: "/sandbox/report",
           projectId: "sandbox-vite",
+          campaignId: "abc123",
           appVersion: "0.0.1",
           environment: "development",
-          storage: {
-            mode: "proxy",
-            proxy: {
-              uploadEndpoint: "/sandbox/upload"
-            }
-          },
           features: {
             screenshot: true,
             recording: true,
+            recordingEntireScreenOnly: true,
             annotations: true,
             consoleLogs: true,
             networkInfo: true

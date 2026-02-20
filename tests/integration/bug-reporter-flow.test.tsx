@@ -20,6 +20,38 @@ function Harness() {
       <button type="button" onClick={() => reporter.setDockSide("top")}>
         DockTop
       </button>
+      <button
+        type="button"
+        onClick={() =>
+          reporter.setScreenshot({
+            id: "asset-screenshot-1",
+            type: "screenshot",
+            blob: new Blob(["fake-image"], { type: "image/png" }),
+            previewUrl: "",
+            mimeType: "image/png",
+            filename: "screenshot.png",
+            size: 10
+          })
+        }
+      >
+        AddScreenshot
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          reporter.setRecording({
+            id: "asset-recording-1",
+            type: "recording",
+            blob: new Blob(["fake-video"], { type: "video/webm" }),
+            previewUrl: "",
+            mimeType: "video/webm",
+            filename: "recording.webm",
+            size: 10
+          })
+        }
+      >
+        AddRecording
+      </button>
       <button type="button" onClick={() => void reporter.submit()}>
         Submit
       </button>
@@ -94,5 +126,69 @@ describe("BugReporter integration", () => {
     expect(screen.getByTestId("dock-side")).toHaveTextContent("left");
     await user.click(screen.getByRole("button", { name: "DockTop" }));
     expect(screen.getByTestId("dock-side")).toHaveTextContent("top");
+  });
+
+  it("submits via onSubmit without api/storage endpoints", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => ({ id: "custom-submit-1" }));
+
+    render(
+      <BugReporterProvider
+        config={{
+          features: { screenshot: false, recording: false }
+        }}
+        onSubmit={onSubmit}
+      >
+        <Harness />
+      </BugReporterProvider>
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole("button", { name: "Draft" }));
+    await user.click(screen.getByRole("button", { name: "Review" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("step")).toHaveTextContent("success");
+    });
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it("passes screenshot and recording assets as base64 in onSubmit", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async (_payload: unknown) => ({ id: "custom-submit-assets" }));
+
+    render(
+      <BugReporterProvider
+        config={{
+          features: { screenshot: false, recording: false }
+        }}
+        onSubmit={onSubmit}
+      >
+        <Harness />
+      </BugReporterProvider>
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    await user.click(screen.getByRole("button", { name: "Draft" }));
+    await user.click(screen.getByRole("button", { name: "AddScreenshot" }));
+    await user.click(screen.getByRole("button", { name: "AddRecording" }));
+    await user.click(screen.getByRole("button", { name: "Review" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("step")).toHaveTextContent("success");
+    });
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const payload = onSubmit.mock.calls[0]?.[0] as { assets: Array<{ type: string; base64: string }> };
+    expect(payload.assets).toHaveLength(2);
+
+    const screenshotAsset = payload.assets.find((asset: { type: string }) => asset.type === "screenshot");
+    const recordingAsset = payload.assets.find((asset: { type: string }) => asset.type === "recording");
+
+    expect(screenshotAsset?.base64).toMatch(/^data:image\/png;base64,/);
+    expect(recordingAsset?.base64).toMatch(/^data:video\/webm;base64,/);
   });
 });

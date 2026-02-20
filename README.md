@@ -29,6 +29,50 @@ export function App() {
 }
 ```
 
+## Controlled Submit (No SDK Endpoints)
+
+If you prefer to handle uploads/submission yourself, pass `onSubmit`.  
+`onSubmit` receives issue/context/reporter data and `assets` as data URLs (`base64`) for both screenshots and recordings.
+
+```tsx
+import { BugReporter } from "@fogg/bug-reporter";
+import type { BugReporterSubmitData } from "@fogg/bug-reporter";
+
+async function handleSubmit(payload: BugReporterSubmitData) {
+  // Every asset includes a base64 data URL.
+  console.log("title", payload.issue.title);
+  console.log("assets", payload.assets);
+
+  payload.assets.forEach((asset) => {
+    console.log(asset.type, asset.base64.slice(0, 64));
+  });
+}
+
+export function App() {
+  return (
+    <BugReporter
+      config={{
+        features: { screenshot: true, recording: true }
+      }}
+      onSubmit={handleSubmit}
+    />
+  );
+}
+```
+
+To prefer full-screen-only capture for recordings:
+
+```tsx
+<BugReporter
+  config={{
+    features: {
+      recording: true,
+      recordingEntireScreenOnly: true
+    }
+  }}
+/>
+```
+
 ## Capture Console Errors and Requests
 
 Enable these flags in config to attach logs and request traces to each report:

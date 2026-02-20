@@ -12,19 +12,25 @@ import { BugReporterContext } from "../core/context";
 import { withDefaults } from "../core/defaults";
 import { submitReport } from "../core/submit";
 import { revokeObjectUrl } from "../core/utils";
+import { BugReporterError } from "../types";
 import type {
+  BugReportResponse,
   BugReporterConfig,
+  BugReporterSubmitAsset,
   BugReporterContextValue,
+  BugReporterSubmitData,
   BugReporterState,
   CapturedAsset,
   DockSide,
   DiagnosticsPreview,
   FlowStep,
-  ReportDraft
+  ReportDraft,
+  Reporter
 } from "../types";
 
 type BugReporterProviderProps = PropsWithChildren<{
   config: BugReporterConfig;
+  onSubmit?: (payload: BugReporterSubmitData) => Promise<BugReportResponse | void> | BugReportResponse | void;
 }>;
 
 const EMPTY_DRAFT: ReportDraft = {
@@ -47,7 +53,39 @@ const BASE_STATE: BugReporterState = {
   error: undefined
 };
 
-export function BugReporterProvider({ config, children }: BugReporterProviderProps) {
+function createSubmitError(message: string, cause?: unknown): BugReporterError {
+  return new BugReporterError("SUBMIT_ERROR", message, cause);
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Failed to read file."));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Failed to read file."));
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function buildSubmitAssets(assets: CapturedAsset[]): Promise<BugReporterSubmitAsset[]> {
+  return Promise.all(
+    assets.map(async (asset) => ({
+      id: asset.id,
+      type: asset.type,
+      filename: asset.filename,
+      mimeType: asset.mimeType,
+      size: asset.size,
+      base64: await blobToDataUrl(asset.blob)
+    }))
+  );
+}
+
+export function BugReporterProvider({ config, onSubmit, children }: BugReporterProviderProps) {
   const resolvedConfig = useMemo(() => withDefaults(config), [config]);
   const initialDockSide: DockSide =
     resolvedConfig.theme.position === "bottom-left" || resolvedConfig.theme.position === "top-left" ? "left" : "right";
@@ -172,16 +210,69 @@ export function BugReporterProvider({ config, children }: BugReporterProviderPro
         requests
       });
 
-      const response = await submitReport({
-        config: resolvedConfig,
-        draft: state.draft,
-        attributes: state.attributes,
-        diagnostics,
-        assets: state.assets,
-        onUploadProgress: (progress) => {
-          setState((prev) => ({ ...prev, uploadProgress: progress }));
+      const reporter: Reporter = {
+        id: resolvedConfig.user?.id,
+        name: resolvedConfig.user?.name,
+        email: resolvedConfig.user?.email,
+        role: resolvedConfig.user?.role,
+        ip: resolvedConfig.user?.ip,
+        anonymous: resolvedConfig.user?.anonymous ?? !(resolvedConfig.user?.id || resolvedConfig.user?.email || resolvedConfig.user?.name)
+      };
+
+      let response: BugReportResponse | void;
+      if (onSubmit) {
+        let submitAssets: BugReporterSubmitAsset[];
+        try {
+          submitAssets = await buildSubmitAssets(state.assets);
+        } catch (assetTransformError) {
+          throw createSubmitError("We couldn't prepare your files for submission. Please try again.", assetTransformError);
         }
-      });
+
+        response = await onSubmit({
+          issue: {
+            title: state.draft.title,
+            description: state.draft.description,
+            projectId: resolvedConfig.projectId,
+            campaignId: resolvedConfig.campaignId,
+            environment: resolvedConfig.environment,
+            appVersion: resolvedConfig.appVersion
+          },
+          context: {
+            url: diagnostics.url,
+            referrer: diagnostics.referrer,
+            timestamp: diagnostics.timestamp,
+            timezone: diagnostics.timezone,
+            viewport: diagnostics.viewport,
+            client: {
+              browser: diagnostics.browser,
+              os: diagnostics.os,
+              language: diagnostics.language,
+              userAgent: diagnostics.userAgent
+            },
+            userAgentData: diagnostics.userAgentData,
+            performance: {
+              navigationTiming: diagnostics.navigationTiming
+            },
+            logs: diagnostics.logs,
+            requests: diagnostics.requests
+          },
+          reporter,
+          attributes: state.attributes,
+          diagnostics,
+          assets: submitAssets
+        });
+      } else {
+        response = await submitReport({
+          config: resolvedConfig,
+          draft: state.draft,
+          attributes: state.attributes,
+          diagnostics,
+          assets: state.assets,
+          onUploadProgress: (progress) => {
+            setState((prev) => ({ ...prev, uploadProgress: progress }));
+          }
+        });
+      }
 
       setState((prev) => ({
         ...prev,
@@ -192,7 +283,7 @@ export function BugReporterProvider({ config, children }: BugReporterProviderPro
       }));
 
       try {
-        resolvedConfig.hooks.onSuccess?.(response);
+        resolvedConfig.hooks.onSuccess?.(response ?? {});
       } catch (hookError) {
         console.warn("[bug-reporter] onSuccess hook threw an error", hookError);
       }
@@ -210,7 +301,7 @@ export function BugReporterProvider({ config, children }: BugReporterProviderPro
         console.warn("[bug-reporter] onError hook threw an error", hookError);
       }
     }
-  }, [resolvedConfig, state.assets, state.attributes, state.draft]);
+  }, [onSubmit, resolvedConfig, state.assets, state.attributes, state.draft]);
 
   const retrySubmit = useCallback(async () => {
     await submit();

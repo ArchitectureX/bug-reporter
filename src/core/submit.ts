@@ -20,6 +20,10 @@ type SubmitReportOptions = {
 };
 
 export async function submitReport(options: SubmitReportOptions): Promise<BugReportResponse> {
+  if (!options.config.apiEndpoint) {
+    throw new BugReporterError("SUBMIT_ERROR", "Report endpoint is not configured. Pass `apiEndpoint` or use `onSubmit`.");
+  }
+
   let assetReferences: Awaited<ReturnType<typeof uploadAssets>>;
   try {
     const provider = createStorageProvider(options.config);
@@ -41,6 +45,7 @@ export async function submitReport(options: SubmitReportOptions): Promise<BugRep
       title: options.draft.title,
       description: options.draft.description,
       projectId: options.config.projectId,
+      campaignId: options.config.campaignId,
       environment: options.config.environment,
       appVersion: options.config.appVersion,
       assets: assetReferences

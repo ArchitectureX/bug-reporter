@@ -12,6 +12,7 @@ export type ThemeMode = "dark" | "light";
 export type FeatureFlags = {
   screenshot?: boolean;
   recording?: boolean;
+  recordingEntireScreenOnly?: boolean;
   annotations?: boolean;
   consoleLogs?: boolean;
   networkInfo?: boolean;
@@ -159,6 +160,7 @@ export type BugReportPayload = {
     title: string;
     description: string;
     projectId?: string;
+    campaignId?: string;
     environment?: ReportEnvironment;
     appVersion?: string;
     assets: AssetReference[];
@@ -196,6 +198,31 @@ export type BugReportResponse = {
   [key: string]: unknown;
 };
 
+export type BugReporterSubmitAsset = {
+  id: string;
+  type: AssetType;
+  filename: string;
+  mimeType: string;
+  size: number;
+  base64: string;
+};
+
+export type BugReporterSubmitData = {
+  issue: {
+    title: string;
+    description: string;
+    projectId?: string;
+    campaignId?: string;
+    environment?: ReportEnvironment;
+    appVersion?: string;
+  };
+  context: BugReportPayload["context"];
+  reporter: Reporter;
+  attributes: Record<string, unknown>;
+  diagnostics: DiagnosticsSnapshot;
+  assets: BugReporterSubmitAsset[];
+};
+
 export type BugReporterErrorCode =
   | "VALIDATION_ERROR"
   | "CAPTURE_ERROR"
@@ -218,8 +245,9 @@ export class BugReporterError extends Error {
 }
 
 export type BugReporterConfig = {
-  apiEndpoint: string;
+  apiEndpoint?: string;
   projectId?: string;
+  campaignId?: string;
   appVersion?: string;
   environment?: ReportEnvironment;
   storage?: {
@@ -299,8 +327,9 @@ export type BugReporterContextValue = {
 };
 
 export type RequiredBugReporterConfig = {
-  apiEndpoint: string;
+  apiEndpoint?: string;
   projectId?: string;
+  campaignId?: string;
   appVersion?: string;
   environment?: ReportEnvironment;
   storage: {

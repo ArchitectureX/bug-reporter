@@ -31,6 +31,7 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
   const [isScreenshotHover, setIsScreenshotHover] = useState(false);
   const [isDraggingScreenshot, setIsDraggingScreenshot] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 20);
 
   useEffect(() => {
     if (!CustomForm) {
@@ -229,7 +230,7 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
                   style={{
                     ...getButtonStyle("primary", { disabled: isCapturing, fullWidth: true }),
                     ...inlineStyles.captureButton,
-                    ...(isScreenshotHover && !isCapturing ? { background: "#8120C7" } : {})
+                    ...(screenshot || (isScreenshotHover && !isCapturing) ? { background: "#8120C7" } : {})
                   }}
                   onClick={startCapture}
                   onMouseEnter={() => setIsScreenshotHover(true)}
@@ -249,10 +250,10 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
           </div>
           <p style={inlineStyles.captureNote}>
             {config.features.screenshot && config.features.recording
-              ? `Capture a screenshot and optionally record up to ${config.storage.limits.maxVideoSeconds} seconds.`
+              ? `Capture a screenshot and optionally record up to ${uiMaxVideoSeconds} seconds.`
               : config.features.screenshot
                 ? "Capture the relevant area before continuing."
-                : `Record up to ${config.storage.limits.maxVideoSeconds} seconds.`}
+                : `Record up to ${uiMaxVideoSeconds} seconds.`}
           </p>
           {config.features.screenshot ? (
             <>

@@ -4,11 +4,13 @@ const DEFAULT_MASK_SELECTORS = [
   "input[type='password']",
   "[data-bug-reporter-mask='true']"
 ];
+const MAX_RECORDING_SECONDS = 21;
 
 export function withDefaults(config: BugReporterConfig): RequiredBugReporterConfig {
   return {
     apiEndpoint: config.apiEndpoint,
     projectId: config.projectId,
+    campaignId: config.campaignId,
     appVersion: config.appVersion,
     environment: config.environment,
     storage: {
@@ -17,7 +19,7 @@ export function withDefaults(config: BugReporterConfig): RequiredBugReporterConf
       local: config.storage?.local,
       proxy: config.storage?.proxy,
       limits: {
-        maxVideoSeconds: config.storage?.limits?.maxVideoSeconds ?? 30,
+        maxVideoSeconds: Math.min(config.storage?.limits?.maxVideoSeconds ?? MAX_RECORDING_SECONDS, MAX_RECORDING_SECONDS),
         maxVideoBytes: config.storage?.limits?.maxVideoBytes ?? 50 * 1024 * 1024,
         maxScreenshotBytes: config.storage?.limits?.maxScreenshotBytes ?? 8 * 1024 * 1024
       }
@@ -35,6 +37,7 @@ export function withDefaults(config: BugReporterConfig): RequiredBugReporterConf
     features: {
       screenshot: config.features?.screenshot ?? true,
       recording: config.features?.recording ?? true,
+      recordingEntireScreenOnly: config.features?.recordingEntireScreenOnly ?? false,
       annotations: config.features?.annotations ?? true,
       consoleLogs: config.features?.consoleLogs ?? false,
       networkInfo: config.features?.networkInfo ?? false

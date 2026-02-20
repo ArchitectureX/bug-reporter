@@ -147,7 +147,7 @@ export function StepScreenshot({ onBack, onNext }: StepScreenshotProps) {
           type="button"
           style={{
             ...getButtonStyle("primary", { disabled: isCapturing }),
-            ...(isScreenshotHover && !isCapturing ? { background: "#8120C7" } : {})
+            ...(screenshot || (isScreenshotHover && !isCapturing) ? { background: "#8120C7" } : {})
           }}
           onClick={startCapture}
           onMouseEnter={() => setIsScreenshotHover(true)}
