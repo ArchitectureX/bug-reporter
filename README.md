@@ -73,6 +73,19 @@ To prefer full-screen-only capture for recordings:
 />
 ```
 
+If you need screenshots to include cross-origin iframe areas, enable picker fallback explicitly:
+
+```tsx
+<BugReporter
+  config={{
+    features: {
+      screenshot: true,
+      screenshotCrossOriginFallback: true
+    }
+  }}
+/>
+```
+
 ## Capture Console Errors and Requests
 
 Enable these flags in config to attach logs and request traces to each report:

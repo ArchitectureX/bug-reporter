@@ -82,7 +82,8 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
       const capture = await loadScreenshotCapture();
       const blob = await capture.captureScreenshotArea({
         maskSelectors: config.privacy.maskSelectors,
-        redactTextPatterns: config.privacy.redactTextPatterns
+        redactTextPatterns: config.privacy.redactTextPatterns,
+        allowDisplayMediaFallback: config.features.screenshotCrossOriginFallback
       });
       validateScreenshotSize(blob.size, config.storage.limits.maxScreenshotBytes);
       setScreenshot({

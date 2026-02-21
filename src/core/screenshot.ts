@@ -4,6 +4,7 @@ import html2canvas from "html2canvas";
 type CaptureOptions = {
   maskSelectors: string[];
   redactTextPatterns: Array<string | RegExp>;
+  allowDisplayMediaFallback?: boolean;
 };
 
 type SelectionRect = {
@@ -192,7 +193,7 @@ function intersectsCrossOriginIframe(selection: SelectionRect): boolean {
 
 async function captureWithDisplayMedia(selection: SelectionRect): Promise<Blob> {
   if (!navigator.mediaDevices?.getDisplayMedia) {
-    throw new BugReporterError("CAPTURE_ERROR", "This page contains iframe content that needs screen-capture permission.");
+    throw new BugReporterError("CAPTURE_ERROR", "Screen-capture permission is not available in this browser.");
   }
 
   let stream: MediaStream | null = null;
@@ -246,7 +247,7 @@ async function captureWithDisplayMedia(selection: SelectionRect): Promise<Blob> 
       throw new BugReporterError("PERMISSION_DENIED", "Permission denied for screen capture.", error);
     }
 
-    throw new BugReporterError("CAPTURE_ERROR", "Fallback screen capture failed.", error);
+    throw new BugReporterError("CAPTURE_ERROR", "Screen-capture fallback failed.", error);
   } finally {
     stream?.getTracks().forEach((track) => track.stop());
     video.srcObject = null;
@@ -269,10 +270,18 @@ export async function captureScreenshotArea(options: CaptureOptions): Promise<Bl
   const selection = await createSelectionOverlay();
   const masked = applyMasking(options.maskSelectors);
   const textChanges = scrubText(document.body, options.redactTextPatterns);
+  const hasCrossOriginIframeIntersection = intersectsCrossOriginIframe(selection);
 
   try {
-    if (intersectsCrossOriginIframe(selection)) {
-      return await captureWithDisplayMedia(selection);
+    if (hasCrossOriginIframeIntersection) {
+      if (options.allowDisplayMediaFallback) {
+        return await captureWithDisplayMedia(selection);
+      }
+
+      throw new BugReporterError(
+        "CAPTURE_ERROR",
+        "Screenshot capture cannot include cross-origin iframe content. Select an area outside embedded third-party frames."
+      );
     }
 
     const baseCanvas = await html2canvas(document.documentElement, {
@@ -305,16 +314,6 @@ export async function captureScreenshotArea(options: CaptureOptions): Promise<Bl
     context.drawImage(baseCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
     return await canvasToBlob(cropped);
   } catch (error) {
-    if (!intersectsCrossOriginIframe(selection)) {
-      try {
-        return await captureWithDisplayMedia(selection);
-      } catch (fallbackError) {
-        if (fallbackError instanceof BugReporterError) {
-          throw fallbackError;
-        }
-      }
-    }
-
     if (error instanceof BugReporterError) {
       throw error;
     }

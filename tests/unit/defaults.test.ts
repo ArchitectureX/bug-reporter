@@ -14,6 +14,7 @@ describe("withDefaults", () => {
     });
 
     expect(config.features.screenshot).toBe(true);
+    expect(config.features.screenshotCrossOriginFallback).toBe(false);
     expect(config.features.recordingEntireScreenOnly).toBe(false);
     expect(config.storage.limits.maxVideoSeconds).toBe(21);
     expect(config.auth.withCredentials).toBe(false);

@@ -11,6 +11,7 @@ export type ThemeMode = "dark" | "light";
 
 export type FeatureFlags = {
   screenshot?: boolean;
+  screenshotCrossOriginFallback?: boolean;
   recording?: boolean;
   recordingEntireScreenOnly?: boolean;
   annotations?: boolean;

@@ -36,6 +36,7 @@ export function withDefaults(config: BugReporterConfig): RequiredBugReporterConf
     },
     features: {
       screenshot: config.features?.screenshot ?? true,
+      screenshotCrossOriginFallback: config.features?.screenshotCrossOriginFallback ?? false,
       recording: config.features?.recording ?? true,
       recordingEntireScreenOnly: config.features?.recordingEntireScreenOnly ?? false,
       annotations: config.features?.annotations ?? true,
