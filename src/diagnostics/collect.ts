@@ -39,6 +39,10 @@ export function collectDiagnostics(
 ): DiagnosticsSnapshot {
   const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
   const { browser, os } = detectBrowserAndOS(navigator.userAgent);
+  const errorLogs = options?.logs?.filter((entry) => entry.level === "error");
+  const failedRequests = options?.requests?.filter(
+    (request) => Boolean(request.error) || request.ok === false || (request.status ?? 0) >= 400
+  );
 
   return {
     url: window.location.href,
@@ -58,8 +62,8 @@ export function collectDiagnostics(
     appVersion: config.appVersion,
     environment: config.environment,
     projectId: config.projectId,
-    logs: options?.logs,
-    requests: options?.requests,
+    logs: errorLogs,
+    requests: failedRequests,
     navigationTiming: {
       domComplete: nav?.domComplete,
       loadEventEnd: nav?.loadEventEnd,

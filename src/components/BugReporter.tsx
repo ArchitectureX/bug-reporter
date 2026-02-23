@@ -1,5 +1,6 @@
 
 import { BugReporterProvider } from "./BugReporterProvider";
+import { FloatingRecordingPanel } from "./FloatingRecordingPanel";
 import { LauncherButton } from "./LauncherButton";
 import { Modal } from "./Modal";
 import { StepDescribe } from "./StepDescribe";
@@ -23,6 +24,7 @@ type BugReporterProps = {
   launcherText?: string;
   themeMode?: ThemeMode;
   buttonColor?: string;
+  reporter?: NonNullable<BugReporterConfig["user"]>;
   onSubmit?: (payload: BugReporterSubmitData) => Promise<BugReportResponse | void> | BugReportResponse | void;
 };
 
@@ -91,6 +93,7 @@ function BugReporterShell({ CustomForm, launcherPosition, launcherText, themeMod
   return (
     <>
       <LauncherButton position={launcherPosition} text={launcherText} themeMode={themeMode} buttonColor={buttonColor} />
+      <FloatingRecordingPanel isMainPanelOpen={state.isOpen} themeMode={themeMode} zIndex={config.theme.zIndex + 2} />
       <Modal
         isOpen={state.isOpen}
         dockSide={state.dockSide}
@@ -157,12 +160,22 @@ export function BugReporter({
   launcherText,
   themeMode = "dark",
   buttonColor,
+  reporter,
   onSubmit
 }: BugReporterProps) {
   const resolvedButtonColor = buttonColor ?? config.theme?.primaryColor ?? "#390E58";
+  const resolvedConfig = reporter
+    ? {
+        ...config,
+        user: {
+          ...(config.user ?? {}),
+          ...reporter
+        }
+      }
+    : config;
 
   return (
-    <BugReporterProvider config={config} onSubmit={onSubmit}>
+    <BugReporterProvider config={resolvedConfig} onSubmit={onSubmit}>
       <BugReporterShell
         CustomForm={CustomForm}
         launcherPosition={launcherPosition}

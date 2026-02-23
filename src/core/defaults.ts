@@ -4,7 +4,7 @@ const DEFAULT_MASK_SELECTORS = [
   "input[type='password']",
   "[data-bug-reporter-mask='true']"
 ];
-const MAX_RECORDING_SECONDS = 21;
+const MAX_RECORDING_SECONDS = 31;
 
 export function withDefaults(config: BugReporterConfig): RequiredBugReporterConfig {
   return {

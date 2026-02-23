@@ -16,12 +16,12 @@ describe("withDefaults", () => {
     expect(config.features.screenshot).toBe(true);
     expect(config.features.screenshotCrossOriginFallback).toBe(false);
     expect(config.features.recordingEntireScreenOnly).toBe(false);
-    expect(config.storage.limits.maxVideoSeconds).toBe(21);
+    expect(config.storage.limits.maxVideoSeconds).toBe(31);
     expect(config.auth.withCredentials).toBe(false);
     expect(config.theme.position).toBe("bottom-right");
   });
 
-  it("caps maxVideoSeconds to 21", () => {
+  it("caps maxVideoSeconds to 31", () => {
     const config = withDefaults({
       storage: {
         mode: "proxy",
@@ -31,6 +31,6 @@ describe("withDefaults", () => {
       }
     });
 
-    expect(config.storage.limits.maxVideoSeconds).toBe(21);
+    expect(config.storage.limits.maxVideoSeconds).toBe(31);
   });
 });

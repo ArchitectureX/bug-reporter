@@ -1,5 +1,6 @@
 import { BugReporterError } from "../types";
 import html2canvas from "html2canvas";
+import { runCaptureCountdown } from "./capture-countdown";
 
 type CaptureOptions = {
   maskSelectors: string[];
@@ -20,6 +21,27 @@ type RectLike = {
   width: number;
   height: number;
 };
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+async function waitForNextVideoFrame(video: HTMLVideoElement): Promise<void> {
+  const withVideoFrameCallback = video as HTMLVideoElement & {
+    requestVideoFrameCallback?: (callback: () => void) => number;
+  };
+
+  if (typeof withVideoFrameCallback.requestVideoFrameCallback === "function") {
+    await new Promise<void>((resolve) => {
+      withVideoFrameCallback.requestVideoFrameCallback?.(() => resolve());
+    });
+    return;
+  }
+
+  await wait(50);
+}
 
 function applyMasking(selectors: string[]): Array<{ element: HTMLElement; previous: string }> {
   const masked: Array<{ element: HTMLElement; previous: string }> = [];
@@ -220,6 +242,18 @@ async function captureWithDisplayMedia(selection: SelectionRect): Promise<Blob> 
       throw new BugReporterError("CAPTURE_ERROR", "Could not read screen-capture frame.");
     }
 
+    await runCaptureCountdown({ mode: "screenshot", seconds: 3 });
+
+    // Wait for fresh post-permission frames so browser permission UI does not leak into the capture.
+    await waitForNextVideoFrame(video);
+    await waitForNextVideoFrame(video);
+    await wait(120);
+
+    const videoTrack = stream.getVideoTracks()[0];
+    if (!videoTrack || videoTrack.readyState === "ended") {
+      throw new BugReporterError("ABORTED", "Screenshot capture cancelled.");
+    }
+
     const scaleX = video.videoWidth / window.innerWidth;
     const scaleY = video.videoHeight / window.innerHeight;
     const sx = Math.max(0, Math.round(selection.left * scaleX));
@@ -283,6 +317,8 @@ export async function captureScreenshotArea(options: CaptureOptions): Promise<Bl
         "Screenshot capture cannot include cross-origin iframe content. Select an area outside embedded third-party frames."
       );
     }
+
+    await runCaptureCountdown({ mode: "screenshot", seconds: 3 });
 
     const baseCanvas = await html2canvas(document.documentElement, {
       useCORS: true,

@@ -8,6 +8,7 @@ import type {
   RequiredBugReporterConfig
 } from "../types";
 import { createStorageProvider } from "../storage";
+import { resolveReporter } from "./reporter";
 import { uploadAssets } from "./upload";
 
 type SubmitReportOptions = {
@@ -40,6 +41,8 @@ export async function submitReport(options: SubmitReportOptions): Promise<BugRep
     throw new BugReporterError("UPLOAD_ERROR", "We couldn't upload your screenshot/video right now. Please try again.", error);
   }
 
+  const reporter = await resolveReporter(options.config.user);
+
   const payloadBase: BugReportPayload = {
     issue: {
       title: options.draft.title,
@@ -63,20 +66,10 @@ export async function submitReport(options: SubmitReportOptions): Promise<BugRep
         userAgent: options.diagnostics.userAgent
       },
       userAgentData: options.diagnostics.userAgentData,
-      performance: {
-        navigationTiming: options.diagnostics.navigationTiming
-      },
       logs: options.diagnostics.logs,
       requests: options.diagnostics.requests
     },
-    reporter: {
-      id: options.config.user?.id,
-      name: options.config.user?.name,
-      email: options.config.user?.email,
-      role: options.config.user?.role,
-      ip: options.config.user?.ip,
-      anonymous: options.config.user?.anonymous ?? !(options.config.user?.id || options.config.user?.email || options.config.user?.name)
-    },
+    reporter,
     attributes: options.attributes
   };
 

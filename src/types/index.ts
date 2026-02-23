@@ -183,9 +183,6 @@ export type BugReportPayload = {
       userAgent: string;
     };
     userAgentData?: DiagnosticsSnapshot["userAgentData"];
-    performance: {
-      navigationTiming?: DiagnosticsSnapshot["navigationTiming"];
-    };
     logs?: ConsoleLogEntry[];
     requests?: NetworkRequestEntry[];
   };
@@ -220,7 +217,6 @@ export type BugReporterSubmitData = {
   context: BugReportPayload["context"];
   reporter: Reporter;
   attributes: Record<string, unknown>;
-  diagnostics: DiagnosticsSnapshot;
   assets: BugReporterSubmitAsset[];
 };
 

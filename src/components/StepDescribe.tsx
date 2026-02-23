@@ -1,7 +1,7 @@
 import type { CustomFormComponent } from "../types";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type KeyboardEvent } from "react";
 import { loadScreenshotCapture } from "../core/lazy";
-import { blobToObjectUrl, uid } from "../core/utils";
+import { blobToObjectUrl, sleep, uid } from "../core/utils";
 import { validateScreenshotSize } from "../core/validation";
 import { useBugReporter } from "../hooks";
 import { AnnotationCanvas, type AnnotationCanvasHandle } from "./AnnotationCanvas";
@@ -20,18 +20,28 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
     updateDraft,
     setAttributes,
     updateAttribute,
-    setScreenshot
+    setScreenshot,
+    close,
+    open
   } = useBugReporter();
   const screenshot = useMemo(() => assets.find((asset) => asset.type === "screenshot"), [assets]);
   const recording = useMemo(() => assets.find((asset) => asset.type === "recording"), [assets]);
   const annotationRef = useRef<AnnotationCanvasHandle | null>(null);
   const customFormRef = useRef<HTMLDivElement | null>(null);
   const screenshotInputRef = useRef<HTMLInputElement | null>(null);
+  const mountedRef = useRef(true);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isScreenshotHover, setIsScreenshotHover] = useState(false);
   const [isDraggingScreenshot, setIsDraggingScreenshot] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 20);
+  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 30);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!CustomForm) {
@@ -76,8 +86,15 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
   }, [CustomForm]);
 
   const startCapture = async () => {
-    setError(null);
-    setIsCapturing(true);
+    if (mountedRef.current) {
+      setError(null);
+      setIsCapturing(true);
+    }
+
+    // Minimize to launcher before capture so users have more room to select an area.
+    close();
+    await sleep(120);
+
     try {
       const capture = await loadScreenshotCapture();
       const blob = await capture.captureScreenshotArea({
@@ -96,9 +113,14 @@ export function StepDescribe({ onNext, CustomForm }: StepDescribeProps) {
         size: blob.size
       });
     } catch (captureError) {
-      setError(captureError instanceof Error ? captureError.message : "Screenshot capture failed.");
+      if (mountedRef.current) {
+        setError(captureError instanceof Error ? captureError.message : "Screenshot capture failed.");
+      }
     } finally {
-      setIsCapturing(false);
+      if (mountedRef.current) {
+        setIsCapturing(false);
+      }
+      open();
     }
   };
 

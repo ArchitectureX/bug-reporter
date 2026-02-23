@@ -10,6 +10,7 @@ import {
 import { collectDiagnostics, ConsoleBuffer, NetworkBuffer } from "../diagnostics";
 import { BugReporterContext } from "../core/context";
 import { withDefaults } from "../core/defaults";
+import { resolveReporter } from "../core/reporter";
 import { submitReport } from "../core/submit";
 import { revokeObjectUrl } from "../core/utils";
 import { BugReporterError } from "../types";
@@ -210,14 +211,7 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
         requests
       });
 
-      const reporter: Reporter = {
-        id: resolvedConfig.user?.id,
-        name: resolvedConfig.user?.name,
-        email: resolvedConfig.user?.email,
-        role: resolvedConfig.user?.role,
-        ip: resolvedConfig.user?.ip,
-        anonymous: resolvedConfig.user?.anonymous ?? !(resolvedConfig.user?.id || resolvedConfig.user?.email || resolvedConfig.user?.name)
-      };
+      const reporter: Reporter = await resolveReporter(resolvedConfig.user);
 
       let response: BugReportResponse | void;
       if (onSubmit) {
@@ -250,15 +244,11 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
               userAgent: diagnostics.userAgent
             },
             userAgentData: diagnostics.userAgentData,
-            performance: {
-              navigationTiming: diagnostics.navigationTiming
-            },
             logs: diagnostics.logs,
             requests: diagnostics.requests
           },
           reporter,
           attributes: state.attributes,
-          diagnostics,
           assets: submitAssets
         });
       } else {

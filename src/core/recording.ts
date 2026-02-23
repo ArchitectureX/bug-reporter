@@ -1,4 +1,5 @@
 import { BugReporterError } from "../types";
+import { runCaptureCountdown } from "./capture-countdown";
 
 export type RecordingResult = {
   blob: Blob;
@@ -52,6 +53,14 @@ export async function startScreenRecording(options: StartRecordingOptions): Prom
       stream.getTracks().forEach((track) => track.stop());
       throw new BugReporterError("VALIDATION_ERROR", "Please choose Entire Screen to record.");
     }
+  }
+
+  await runCaptureCountdown({ mode: "recording", seconds: 3 });
+
+  const videoTrack = stream.getVideoTracks()[0];
+  if (!videoTrack || videoTrack.readyState === "ended") {
+    stream.getTracks().forEach((track) => track.stop());
+    throw new BugReporterError("ABORTED", "Screen recording was cancelled before it started.");
   }
 
   const mimeType = pickMimeType();

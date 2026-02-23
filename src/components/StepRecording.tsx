@@ -1,8 +1,7 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ActiveRecording } from "../core/recording";
 import { loadScreenRecording } from "../core/lazy";
-import { blobToObjectUrl, uid } from "../core/utils";
+import { blobToObjectUrl, sleep, uid } from "../core/utils";
 import { validateVideoSize } from "../core/validation";
 import { useBugReporter } from "../hooks";
 import { getButtonStyle, inlineStyles } from "../styles/inline";
@@ -26,11 +25,31 @@ function notifySubscribers(): void {
   subscribers.forEach((handler) => handler());
 }
 
+export function getSharedRecordingState(): { isRecording: boolean; seconds: number } {
+  return {
+    isRecording: Boolean(sharedRecording),
+    seconds: sharedRecording?.seconds ?? 0
+  };
+}
+
+export function subscribeToSharedRecording(handler: () => void): () => void {
+  subscribers.add(handler);
+  return () => {
+    subscribers.delete(handler);
+  };
+}
+
+export function stopSharedRecording(): void {
+  sharedRecording?.active.stop();
+}
+
 export function StepRecording({ onBack, onNext, embedded = false, compact = false }: StepRecordingProps) {
   const {
     config,
     state: { assets },
-    setRecording
+    setRecording,
+    close,
+    open
   } = useBugReporter();
 
   const recording = useMemo(() => assets.find((asset) => asset.type === "recording"), [assets]);
@@ -40,7 +59,8 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
   const [isRecordHover, setIsRecordHover] = useState(false);
   const [seconds, setSeconds] = useState(sharedRecording?.seconds ?? 0);
   const [error, setError] = useState<string | null>(null);
-  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 20);
+  const uiMaxVideoSeconds = Math.min(config.storage.limits.maxVideoSeconds, 30);
+  const displayedSeconds = Math.min(seconds, 30);
 
   const start = async () => {
     if (sharedRecording) {
@@ -52,6 +72,13 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
     setSeconds(0);
     setIsRecording(true);
 
+    const shouldAutoCollapse = compact || embedded;
+    if (shouldAutoCollapse) {
+      // Minimize to launcher before opening browser capture prompts.
+      close();
+      await sleep(120);
+    }
+
     try {
       const recorderModule = await loadScreenRecording();
       const active = await recorderModule.startScreenRecording({
@@ -60,7 +87,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
         entireScreenOnly: config.features.recordingEntireScreenOnly,
         onTick: (tick) => {
           if (sharedRecording) {
-            sharedRecording.seconds = tick;
+            sharedRecording.seconds = Math.min(tick, 30);
             notifySubscribers();
           }
         }
@@ -93,6 +120,9 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
       notifySubscribers();
       if (mountedRef.current) {
         setIsRecording(false);
+      }
+      if (shouldAutoCollapse) {
+        open();
       }
     }
   };
@@ -146,7 +176,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
         <svg style={inlineStyles.captureIcon} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
           <rect x="7" y="7" width="10" height="10" />
         </svg>
-        <span>Stop ({seconds}s)</span>
+        <span>Stop ({displayedSeconds}s)</span>
       </button>
     );
 
@@ -184,7 +214,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
           </button>
         ) : (
           <button type="button" style={getButtonStyle("danger")} onClick={stop}>
-            Stop ({seconds}s)
+            Stop ({displayedSeconds}s)
           </button>
         )}
       </div>
