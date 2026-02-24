@@ -22,6 +22,7 @@ type BugReporterProps = {
   CustomForm?: CustomFormComponent;
   launcherPosition?: LauncherPosition;
   launcherText?: string;
+  launcherButtonText?: string;
   describeStepTitle?: string;
   describeStepDescription?: string;
   themeMode?: ThemeMode;
@@ -33,7 +34,7 @@ type BugReporterProps = {
 type BugReporterShellProps = {
   CustomForm?: CustomFormComponent;
   launcherPosition?: LauncherPosition;
-  launcherText?: string;
+  launcherButtonText?: string;
   describeStepTitle: string;
   describeStepDescription: string;
   themeMode: ThemeMode;
@@ -84,7 +85,7 @@ function DockIcon({ side }: { side: DockSide }) {
 function BugReporterShell({
   CustomForm,
   launcherPosition,
-  launcherText,
+  launcherButtonText,
   describeStepTitle,
   describeStepDescription,
   themeMode,
@@ -107,7 +108,7 @@ function BugReporterShell({
 
   return (
     <>
-      <LauncherButton position={launcherPosition} text={launcherText} themeMode={themeMode} buttonColor={buttonColor} />
+      <LauncherButton position={launcherPosition} text={launcherButtonText} themeMode={themeMode} buttonColor={buttonColor} />
       <FloatingRecordingPanel isMainPanelOpen={state.isOpen} themeMode={themeMode} zIndex={config.theme.zIndex + 2} />
       <Modal
         isOpen={state.isOpen}
@@ -180,6 +181,7 @@ export function BugReporter({
   CustomForm,
   launcherPosition,
   launcherText,
+  launcherButtonText,
   describeStepTitle = DEFAULT_DESCRIBE_STEP_TITLE,
   describeStepDescription = DEFAULT_DESCRIBE_STEP_DESCRIPTION,
   themeMode = "dark",
@@ -187,6 +189,7 @@ export function BugReporter({
   reporter,
   onSubmit
 }: BugReporterProps) {
+  const resolvedLauncherButtonText = launcherButtonText ?? launcherText;
   const resolvedButtonColor = buttonColor ?? config.theme?.primaryColor ?? "#390E58";
   const resolvedConfig = reporter
     ? {
@@ -203,7 +206,7 @@ export function BugReporter({
       <BugReporterShell
         CustomForm={CustomForm}
         launcherPosition={launcherPosition}
-        launcherText={launcherText}
+        launcherButtonText={resolvedLauncherButtonText}
         describeStepTitle={describeStepTitle}
         describeStepDescription={describeStepDescription}
         themeMode={themeMode}

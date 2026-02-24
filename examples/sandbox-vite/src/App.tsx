@@ -223,6 +223,7 @@ export function App() {
         CustomForm={SeverityCustomForm}
         themeMode="light"
         buttonColor="#374151"
+        launcherButtonText="Report issue"
         describeStepTitle="Report a bug"
         describeStepDescription="Provide enough context so engineers can reproduce what happened."
         onSubmit={handleReporterSubmit}
