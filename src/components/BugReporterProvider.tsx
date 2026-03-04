@@ -212,6 +212,9 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
   }, [setAssetByType]);
 
   const submit = useCallback(async () => {
+    let simulatedProgressTimer: ReturnType<typeof setInterval> | null = null;
+    let simulatedProgressStart = 0;
+
     setState((prev) => ({
       ...prev,
       step: "submitting",
@@ -238,6 +241,16 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
         } catch (assetTransformError) {
           throw createSubmitError("We couldn't prepare your files for submission. Please try again.", assetTransformError);
         }
+
+        const hasRecordingAsset = state.assets.some((asset) => asset.type === "recording");
+        const simulatedProgressDuration = hasRecordingAsset ? 12_000 : 5_000;
+        simulatedProgressStart = Date.now();
+        simulatedProgressTimer = setInterval(() => {
+          const elapsed = Date.now() - simulatedProgressStart;
+          const ratio = Math.min(0.99, (elapsed / simulatedProgressDuration) * 0.99);
+
+          setState((prev) => (prev.isSubmitting ? { ...prev, uploadProgress: ratio } : prev));
+        }, 100);
 
         response = await onSubmit({
           issue: {
@@ -268,6 +281,11 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
           attributes: state.attributes,
           assets: submitAssets
         });
+
+        if (simulatedProgressTimer) {
+          clearInterval(simulatedProgressTimer);
+          simulatedProgressTimer = null;
+        }
       } else {
         response = await submitReport({
           config: resolvedConfig,
@@ -295,6 +313,11 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
         console.warn("[bug-reporter] onSuccess hook threw an error", hookError);
       }
     } catch (error) {
+      if (simulatedProgressTimer) {
+        clearInterval(simulatedProgressTimer);
+        simulatedProgressTimer = null;
+      }
+
       const message = error instanceof Error ? error.message : "Unexpected submit failure.";
       setState((prev) => ({
         ...prev,
