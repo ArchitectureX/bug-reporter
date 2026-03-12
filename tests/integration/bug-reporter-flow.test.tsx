@@ -88,7 +88,7 @@ function ScreenshotSeedButton() {
 
 async function fillRequiredDescribeFields(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Title"), "Broken login");
-  await user.selectOptions(screen.getByLabelText("What is the severity level?"), "campaign_already_live");
+  await user.selectOptions(screen.getByLabelText("How is this affecting your campaign?"), "campaign_already_live");
 }
 
 describe("BugReporter integration", () => {
@@ -234,7 +234,7 @@ describe("BugReporter integration", () => {
     await user.click(screen.getByRole("button", { name: "Open bug reporter" }));
 
     expect(screen.queryByRole("button", { name: "Screenshot" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Record a video" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Record Screen (Up to 30 seconds)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Drag and drop screenshot" })).toBeInTheDocument();
   });
 
@@ -245,7 +245,7 @@ describe("BugReporter integration", () => {
 
     await user.click(screen.getByRole("button", { name: "Open bug reporter" }));
 
-    const recordButton = screen.getByRole("button", { name: "Record a video" });
+    const recordButton = screen.getByRole("button", { name: "Record Screen (Up to 30 seconds)" });
     expect(recordButton.parentElement).toHaveStyle({ flex: "1 1 100%" });
   });
 
@@ -260,7 +260,7 @@ describe("BugReporter integration", () => {
     expect(screen.queryByRole("button", { name: "Drag and drop screenshot" })).not.toBeInTheDocument();
   });
 
-  it("allows continuing when both screenshot inputs are hidden", async () => {
+  it("still requires a video when screenshot inputs are hidden", async () => {
     const user = userEvent.setup();
 
     render(<BugReporter config={{}} showDragAndDrop={false} />);
@@ -268,7 +268,7 @@ describe("BugReporter integration", () => {
     await user.click(screen.getByRole("button", { name: "Open bug reporter" }));
     await fillRequiredDescribeFields(user);
 
-    expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
   });
 
   it("allows continuing with a recording even without a screenshot", async () => {
@@ -279,7 +279,7 @@ describe("BugReporter integration", () => {
         <Harness />
         <StepDescribe
           onNext={() => undefined}
-          describeStepTitle="Report a bug"
+          describeStepTitle="Report a Campaign Issue"
           describeStepDescription="Provide enough context."
           showScreenshotButton={false}
           showDragAndDrop
@@ -311,7 +311,7 @@ describe("BugReporter integration", () => {
       <BugReporterProvider config={{ features: { screenshot: false, recording: false } }}>
         <StepDescribe
           onNext={() => undefined}
-          describeStepTitle="Report a bug"
+          describeStepTitle="Report a Campaign Issue"
           describeStepDescription="Provide enough context."
           showScreenshotButton={false}
           showDragAndDrop
@@ -322,7 +322,7 @@ describe("BugReporter integration", () => {
     await user.type(screen.getByLabelText("Title"), "Broken login");
     expect(screen.getByRole("button", { name: "Continue" })).toBeDisabled();
 
-    await user.selectOptions(screen.getByLabelText("What is the severity level?"), "campaign_already_live");
+    await user.selectOptions(screen.getByLabelText("How is this affecting your campaign?"), "campaign_already_live");
     expect(screen.getByRole("button", { name: "Continue" })).toBeEnabled();
   });
 
@@ -334,7 +334,7 @@ describe("BugReporter integration", () => {
         <ScreenshotSeedButton />
         <StepDescribe
           onNext={() => undefined}
-          describeStepTitle="Report a bug"
+          describeStepTitle="Report a Campaign Issue"
           describeStepDescription="Provide enough context."
           showScreenshotButton={false}
           showDragAndDrop
@@ -347,5 +347,29 @@ describe("BugReporter integration", () => {
 
     await user.click(screen.getByRole("button", { name: "Delete screenshot" }));
     expect(screen.queryByRole("button", { name: "Delete screenshot" })).not.toBeInTheDocument();
+  });
+
+  it("shows the submitted reference on the success screen", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn(async () => ({ reference: "INC2251478" }));
+
+    render(
+      <BugReporter
+        config={{ features: { screenshot: false, recording: false } }}
+        onSubmit={onSubmit}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Open bug reporter" }));
+    await user.type(screen.getByLabelText("Title"), "Broken login");
+    await user.selectOptions(screen.getByLabelText("How is this affecting your campaign?"), "campaign_already_live");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.click(screen.getByRole("button", { name: "Submit" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Issue Submitted")).toBeVisible();
+    });
+
+    expect(screen.getByText("Reference: INC2251478")).toBeVisible();
   });
 });

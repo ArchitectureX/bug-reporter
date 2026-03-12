@@ -297,6 +297,7 @@ export type BugReporterState = {
   attributes: Record<string, unknown>;
   assets: CapturedAsset[];
   diagnostics?: DiagnosticsSnapshot;
+  submitResponse?: BugReportResponse;
   uploadProgress: number;
   isSubmitting: boolean;
   error?: string;

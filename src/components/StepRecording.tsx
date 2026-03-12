@@ -169,7 +169,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
           <circle cx="12" cy="12" r="4.5" />
           <path d="M3.5 8.5h3l1.2-2h8.6l1.2 2h3v7h-3l-1.2 2H7.7l-1.2-2h-3z" />
         </svg>
-        <span>{recording ? "Retake recording" : "Record a video"}</span>
+        <span>{recording ? "Retake Screen Recording" : `Record Screen (Up to ${uiMaxVideoSeconds} seconds)`}</span>
         {recording ? <span style={inlineStyles.captureDone}>Saved</span> : null}
       </button>
     ) : (
@@ -191,7 +191,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
 
   return (
     <div style={embedded ? undefined : inlineStyles.step}>
-      {embedded ? <h3 style={inlineStyles.h3}>Screen recording</h3> : <h2 style={inlineStyles.h2}>Screen recording</h2>}
+      {embedded ? <h3 style={inlineStyles.h3}>Record Screen</h3> : <h2 style={inlineStyles.h2}>Record Screen</h2>}
       <p style={inlineStyles.p}>Record up to {uiMaxVideoSeconds} seconds. You can minimize this sidebar while recording.</p>
 
       <div style={inlineStyles.actions}>
@@ -211,7 +211,7 @@ export function StepRecording({ onBack, onNext, embedded = false, compact = fals
             onMouseEnter={() => setIsRecordHover(true)}
             onMouseLeave={() => setIsRecordHover(false)}
           >
-            {recording ? "Retake recording" : "Record a video"}
+            {recording ? "Retake Screen Recording" : `Record Screen (Up to ${uiMaxVideoSeconds} seconds)`}
           </button>
         ) : (
           <button type="button" style={getButtonStyle("danger")} onClick={stop}>

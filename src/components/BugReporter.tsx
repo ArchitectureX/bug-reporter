@@ -45,10 +45,31 @@ type BugReporterShellProps = {
   buttonColor: string;
 };
 
-const DEFAULT_DESCRIBE_STEP_TITLE = "Report a bug";
-const DEFAULT_DESCRIBE_STEP_DESCRIPTION = "Provide enough context so engineers can reproduce what happened.";
-
 const DOCK_SIDES: DockSide[] = ["left", "right", "top", "bottom"];
+const DEFAULT_DESCRIBE_STEP_TITLE = "Report a Campaign Issue";
+const DEFAULT_DESCRIBE_STEP_DESCRIPTION =
+  "Complete the form below with as much detail as possible to help our support team find the issue. Do not use for design requests.";
+const SUCCESS_MODAL_TITLE = "Issue Submitted";
+
+function resolveIssueReference(response?: BugReportResponse): string | null {
+  if (!response) {
+    return null;
+  }
+
+  const candidates = [
+    response.reference,
+    response.referenceId,
+    response.incidentNumber,
+    response.incidentId,
+    response.ticketId,
+    response.caseId,
+    response.caseNumber,
+    response.id
+  ];
+
+  const reference = candidates.find((value) => typeof value === "string" && value.trim().length > 0);
+  return typeof reference === "string" ? reference.trim() : null;
+}
 
 function DockIcon({ side }: { side: DockSide }) {
   if (side === "left") {
@@ -98,6 +119,7 @@ function BugReporterShell({
   buttonColor
 }: BugReporterShellProps) {
   const { config, state, setDockSide, setStep, close, reset } = useBugReporter();
+  const issueReference = resolveIssueReference(state.submitResponse);
 
   const nextFromDescribe = () => {
     setStep("review");
@@ -110,7 +132,7 @@ function BugReporterShell({
     close();
   };
 
-  const modalTitle = state.step === "success" ? "Report submitted" : describeStepTitle;
+  const modalTitle = state.step === "success" ? SUCCESS_MODAL_TITLE : describeStepTitle;
 
   return (
     <>
@@ -170,8 +192,14 @@ function BugReporterShell({
 
         {state.step === "success" ? (
           <div style={inlineStyles.step}>
-            <h2 style={inlineStyles.h2}>Thanks, report submitted</h2>
-            <p style={inlineStyles.p}>Your bug report has been sent successfully.</p>
+            <h2 style={inlineStyles.h2}>Issue Submitted</h2>
+            <p style={inlineStyles.p}>
+              We&apos;ve received your request. A support specialist will review your submission shortly and reach out to
+              you via email.
+            </p>
+            {issueReference ? (
+              <p style={{ ...inlineStyles.p, color: "var(--br-text)", marginBottom: 0 }}>Reference: {issueReference}</p>
+            ) : null}
             <div style={inlineStyles.actions}>
               <button type="button" style={getButtonStyle("primary")} onClick={requestClose}>
                 Close

@@ -13,11 +13,11 @@ export function StepReview({ onBack }: StepReviewProps) {
 
   return (
     <div style={{ ...inlineStyles.step, display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <h2 style={inlineStyles.h2}>Review and submit</h2>
-      <p style={inlineStyles.p}>Confirm details, then send your report.</p>
+      <h2 style={inlineStyles.h2}>Review &amp; Submit Issue</h2>
+      <p style={inlineStyles.p}>Check the details, and tap submit to send your request.</p>
 
       <div style={inlineStyles.summary}>
-        <strong>{draft.title || "Untitled bug report"}</strong>
+        <strong>{draft.title || "Untitled issue"}</strong>
         <p style={inlineStyles.p}>{draft.description || "No description provided."}</p>
       </div>
 

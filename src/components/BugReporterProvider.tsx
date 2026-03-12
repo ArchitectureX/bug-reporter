@@ -49,6 +49,7 @@ const BASE_STATE: BugReporterState = {
   draft: EMPTY_DRAFT,
   attributes: {},
   assets: [],
+  submitResponse: undefined,
   uploadProgress: 0,
   isSubmitting: false,
   error: undefined
@@ -302,6 +303,7 @@ export function BugReporterProvider({ config, onSubmit, children }: BugReporterP
       setState((prev) => ({
         ...prev,
         diagnostics,
+        submitResponse: response ?? {},
         isSubmitting: false,
         uploadProgress: 1,
         step: "success"

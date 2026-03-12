@@ -51,8 +51,9 @@ export function StepDescribe({
   const shouldShowScreenshotButton = isScreenshotEnabled && showScreenshotButton;
   const shouldShowDragAndDrop = isScreenshotEnabled && showDragAndDrop;
   const canAddScreenshot = shouldShowScreenshotButton || shouldShowDragAndDrop;
-  const requiresScreenshot = canAddScreenshot && !recording;
   const shouldShowCaptureSection = shouldShowScreenshotButton || shouldShowDragAndDrop || isRecordingEnabled;
+  const requiresCaptureEvidence = canAddScreenshot || isRecordingEnabled;
+  const hasCaptureEvidence = Boolean(screenshot) || Boolean(recording);
   const severityLevel = typeof attributes.severityLevel === "string" ? attributes.severityLevel.trim() : "";
   const hasSeverity = Boolean(severityLevel);
 
@@ -212,8 +213,14 @@ export function StepDescribe({
       return;
     }
 
-    if (requiresScreenshot && !screenshot) {
-      setError("Add a screenshot to continue.");
+    if (requiresCaptureEvidence && !hasCaptureEvidence) {
+      setError(
+        canAddScreenshot && isRecordingEnabled
+          ? "Upload a screenshot or record a video to continue."
+          : canAddScreenshot
+            ? "Add a screenshot to continue."
+            : "Record a video to continue."
+      );
       return;
     }
 
@@ -232,7 +239,7 @@ export function StepDescribe({
     onNext();
   };
 
-  const canContinue = Boolean(draft.title.trim()) && hasSeverity && (Boolean(recording) || !requiresScreenshot || Boolean(screenshot));
+  const canContinue = Boolean(draft.title.trim()) && hasSeverity && (!requiresCaptureEvidence || hasCaptureEvidence);
   const deleteScreenshot = () => {
     setScreenshot(undefined);
     setError(null);
@@ -249,7 +256,7 @@ export function StepDescribe({
           style={inlineStyles.input}
           value={draft.title}
           onChange={(event) => updateDraft({ title: event.target.value })}
-          placeholder="Short summary"
+          placeholder='Briefly describe the issue (e.g., "Image widget not updating")'
           required
         />
       </label>
@@ -260,13 +267,13 @@ export function StepDescribe({
           style={inlineStyles.input}
           value={draft.description}
           onChange={(event) => updateDraft({ description: event.target.value })}
-          placeholder="What happened?"
+          placeholder="What happened? Provide context so we can reproduce the issue:"
           rows={4}
         />
       </label>
 
       <label style={inlineStyles.field}>
-        What is the severity level?
+        How is this affecting your campaign?
         <select
           style={inlineStyles.input}
           value={severityLevel}
@@ -280,6 +287,7 @@ export function StepDescribe({
           <option value="campaign_already_live">My campaign is already live</option>
           <option value="campaign_live_in_few_hours">The campaign will be live in a few hours</option>
           <option value="campaign_live_later_today">The campaign will be live later today</option>
+          <option value="question_clarification">Question / Clarification</option>
         </select>
       </label>
 
@@ -320,7 +328,7 @@ export function StepDescribe({
           </div>
           <p style={inlineStyles.captureNote}>
             {canAddScreenshot && isRecordingEnabled
-              ? `${shouldShowScreenshotButton ? "Capture" : "Upload"} a screenshot and optionally record up to ${uiMaxVideoSeconds} seconds.`
+              ? `Upload a screenshot or record a video up to ${uiMaxVideoSeconds} seconds. At least one is required to continue.`
               : canAddScreenshot
                 ? shouldShowScreenshotButton
                   ? "Capture the relevant area before continuing."
